@@ -1,4 +1,4 @@
-
+---
 # EDTA Blood RNA QC
 
 A Streamlit app for automated quality control of EDTA-tube blood RNA profiles using a custom-trained Support Vector Machine (SVM) model.
@@ -180,7 +180,6 @@ Alternatively, you can refer to this repository as:
 
 Korenková V. EDTA Cleaner – Streamlit app for EDTA blood RNA quality control using SVM classification. GitHub repository: https://github.com/vlastaxiv/EDTA_Cleaner
 
----
 
 ## ✉️ Contact
 
@@ -214,7 +213,7 @@ The SVM model was developed using blood RNA profiles obtained from EDTA tubes.
 - computes decision scores for DEV-165, TEST1-23, TEST2-R23, and UNKNOWNS-69 and converts them to QC calls using fixed operating thresholds
 - visualizes the decision boundary in PCA space by evaluating the full-space classifier on a PCA grid mapped back to the original feature space (PCA is used for plotting only; classification is performed in the 7D marker space)
 
-### 📦 Model files
+## 📦 Model files
 
 The pipelines are stored in the models/ directory:
 
