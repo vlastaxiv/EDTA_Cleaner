@@ -2,8 +2,7 @@
 # EDTA Blood RNA QC
 
 A Streamlit app for automated quality control of EDTA-tube blood RNA profiles using a custom-trained Support Vector Machine (SVM) model.
-The model was developed on internally generated experimental data, combining ΔCt normalization, PCA, and SVM classification to assess sample quality.
-Features include interactive PCA plots, adjustable False Negative Rate (FNR) thresholds, and Excel report export.
+The model was developed on internally generated experimental data. The app performs ΔCq normalization (using internal reference genes) and evaluates each sample using a fixed preprocessing and classification pipeline. PCA is used only for visualization (2D projection); classification is computed in the full feature space. Features include interactive PCA plots, adjustable False Negative Rate (FNR) thresholds, and Excel report export.
 
 ---
 
@@ -34,7 +33,7 @@ Features include interactive PCA plots, adjustable False Negative Rate (FNR) thr
 
 ⚠️ **Important notice** 
 
-Copyright (c) 2025 Vlasta Korenková.  
+Copyright (c) 2026 Vlasta Korenková.  
 All rights reserved.  
 
 This code is provided for review purposes only.  
@@ -46,8 +45,8 @@ Upon publication, a permissive license will be attached.
 ## 🔽 Clone the Repository
 
 ```bash
-git clone https://github.com/vlastaxiv/EDTA_QC.git
-cd EDTA_QC
+git clone https://github.com/vlastaxiv/EDTA_Cleaner.git
+cd EDTA_Cleaner
 
 ---
 
@@ -101,8 +100,8 @@ streamlit run src/app.py
 4. **Adjust the False Negative Rate (FNR)**  
    - Use the slider to shift the decision threshold:
      - **0 %** is strictest.
-     - **Increasing FNR** permits more borderline samples to pass.
-     - **Max 9 %** keeps 100 % specificity on training data.
+     - **Increasing FNR** permits more borderline samples to pass as OK samples.
+     - **Max 10 %** keeps 100 % specificity on training data.
 
 5. **Run Prediction**  
    - Click **Run Prediction**.  
@@ -143,15 +142,15 @@ sample, BTG3, CD69, CXCR1, CXCR2, FCGR3A, GAPDH, GUSB, JUN, PPIB, STEAP4
 
 - `GAPDH, GUSB, PPIB`
 
-### ΔCt normalization (performed automatically in the Streamlit app)
+### ΔCq normalization (performed automatically in the Streamlit app)
 
 1. Compute mean Cq of reference genes for each sample.
-2. ΔCt = (Cq_gene – Cq_ref_mean)
-3. Final value = –ΔCt
+2. ΔCq = (Cq_gene – Cq_ref_mean)
+3. Final value = –ΔCq
 
 ### Data included in repository
 
-- data/SVM_training_data.csv — processed input data (-ΔCt values) used for model training.
+- data/SVM_training_data.csv — processed input data (-ΔCq values) used for model training.
 - data_for_testing/ — example files for user testing and error handling demonstration.
 
 ---
@@ -182,7 +181,7 @@ If you use this code or parts of this pipeline in your own work or publication, 
 
 Alternatively, you can refer to this repository as:
 
-Korenková V. EDTA Blood RNA QC – Streamlit app for EDTA blood RNA quality control using SVM classification. GitHub repository: https://github.com/vlastaxiv/EDTA_QC
+Korenková V. EDTA Cleaner – Streamlit app for EDTA blood RNA quality control using SVM classification. GitHub repository: https://github.com/vlastaxiv/EDTA_Cleaner
 
 ---
 
@@ -190,52 +189,41 @@ Korenková V. EDTA Blood RNA QC – Streamlit app for EDTA blood RNA quality con
 
 For questions or support, please contact: `ctrnacta@yahoo.com`.  
 
-_Last updated: 2025-09-15_
+_Last updated: 2026-01-28_
 
 ----
 
 # C. Model Development
 
-
 ## 🔬 Model Development in Jupyter Notebooks
 
 The SVM model was developed using blood RNA profiles obtained from EDTA tubes.
 
-The model development pipeline included two main stages:
+### 1️⃣ 1_SVM_model_kernel_26012026.ipynb 
 
-### 1️⃣ Model selection and training 
+- kernel screening (polynomial vs RBF) on donor-disjoint folds using threshold-free evaluation ROC/AUC
+- selection of final hyperparameters
 
-- Input data consisted of already processed `-ΔCt` values.
-- Autoscaling was applied using `StandardScaler` (zero mean and unit variance).
-- Dimensionality reduction was performed using Principal Component Analysis (PCA), retaining 2 components.
-- Support Vector Machine (SVM) with polynomial kernel (`degree=2`) was used.
-- Hyperparameters (`C`, `coef0`) were optimized using `GridSearchCV` and cross-validation.
-- The optimized model, together with scaler and PCA transformation, was combined into a single pipeline.
-- The complete pipeline was saved as `final_pipeline_prob_v3_2025-09-05.joblib` for deployment in the Streamlit app.
+### 2️⃣ 2_SVM_model_development_26012026.ipynb 
 
-### 2️⃣ Decision threshold evaluation 
+- final model development: training of the fixed pipeline (StandardScaler + polynomial-kernel SVM)
+- validation on TEST2-R23
+- definition of the safe threshold (FNR = 0) as the maximum decision score observed among poor-quality samples in the reference data (DEV-165 + TEST2-R23)
 
-- The trained model was evaluated at various False Negative Rate (FNR) thresholds.
-- Decision boundary shifts were analyzed to balance sensitivity and specificity.
-- These FNR adjustments are implemented as interactive slider options in the Streamlit app.
+### 3️⃣ 3_SVM_decision_boundary_26012026.ipynb
 
-
-### 📓 Available Jupyter notebooks
-
-| Notebook | Description |
-|----------|-------------|
-| `SVM_model_training_testing_10092025.jpynb` | Model training, hyperparameter optimization with GridSearchCV, and pipeline export |
-| `SVM_model_decision_boundary_10092025.ipynb` | Evaluation of decision thresholds (FNR) using the trained model |
-
-> These notebooks reproduce the full model development pipeline and can be adapted for retraining on new datasets.
-
----
+- model application and threshold exploration:
+- uses the unchanged final model (final_pipeline_v1_2025-12-09.joblib) together with the predefined thresholds (no retraining or recalibration)
+- computes decision scores for DEV-165, TEST1-23, TEST2-R23, and UNKNOWNS-69 and converts them to QC calls using fixed operating thresholds
+- visualizes the decision boundary in PCA space by evaluating the full-space classifier on a PCA grid mapped back to the original feature space (PCA is used for plotting only; classification is performed in the 7D marker space)
 
 ### 📦 Model files
 
-The trained model pipeline is stored in the models/ directory:
+The pipelines are stored in the models/ directory:
 
-   - final_pipeline_prob_v3_2025-09-05.joblib — complete pipeline containing StandardScaler, PCA transformation, and trained SVM classifier.
+   - final_pipeline_v1_2025-12-09.joblib — complete pipeline containing StandardScaler, PCA transformation, and trained SVM classifier
+   - pca2.joblib - PCA model used only for 2D visualization
+   - safe_threshold.json - stored safe-threshold value used as the strictest operating point (FNR = 0)
 
 This file is automatically loaded by the Streamlit app to perform predictions on new data.
 
