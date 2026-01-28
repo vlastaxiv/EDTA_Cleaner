@@ -27,19 +27,20 @@ import numpy as np
 import altair as alt
 import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
+import warnings
 
 # File I/O
 import io
 
-# ── Project root and data/model paths ──
+# Project root and data/model paths
 ROOT = Path(__file__).resolve().parent.parent
 DATA_DIR   = ROOT / "data"
 MODELS_DIR = ROOT / "models"
 
-TRAIN_DATA_PATH   = DATA_DIR / "train_197_data.csv"
+TRAIN_DATA_PATH   = DATA_DIR / "train_165_data.csv"
 EXAMPLE_DATA_PATH = DATA_DIR / "example_new_samples.csv"  
-PIPELINE_PATH     = MODELS_DIR / "final_pipeline_prob_v3_2025-09-05.joblib"
-# ── End of paths ──
+CALC_PIPELINE_PATH = MODELS_DIR / "final_pipeline_v1_2025-12-09.joblib"
+PLOT_PIPELINE_PATH = MODELS_DIR /"pca2.joblib"
 
 # Global CSS adjustments
 st.markdown(
@@ -59,26 +60,32 @@ st.markdown(
 )
 
 # Application title
-st.title("EDTA Blood RNA Quality Control")
+st.title("EDTA Cleaner")
 st.markdown(
     "This application evaluates whether gene expression profiles, derived from RNA isolated from EDTA-tube blood,"
     "meet quality standards using a trained Support Vector Machine (SVM) model."
 )
 
 # Load pipeline and training dataset
+# Load pipeline and training dataset
+# Load pipelines and training dataset
 try:
-    pipeline = load_pipeline(str(PIPELINE_PATH))
+    pipeline_calc = load_pipeline(str(CALC_PIPELINE_PATH))  # klasifikace (sklearn Pipeline)
+    pca2 = load_pipeline(str(PLOT_PIPELINE_PATH))           # grafy (PCA objekt z pca2.joblib)
     df_train = get_training_data()
-    st.success("Pipeline and training data loaded successfully.")
+    st.success("Model, PCA2 and training data loaded successfully.")
 except Exception as e:
     st.error(f"Initialization error: {e}")
     st.stop()
 
+
 # Expected feature columns
 try:
-    expected_cols = list(pipeline.feature_names_in_)
+    expected_cols = list(pipeline_calc.feature_names_in_)
 except Exception:
-    expected_cols = list(pipeline.named_steps['model'].feature_names_in_)
+    expected_cols = list(pipeline_calc.named_steps['model'].feature_names_in_)
+
+
 
 # Sidebar: upload & settings
 st.sidebar.header("Upload New Samples for EDTA QC")
@@ -98,7 +105,7 @@ if use_example:
 
 # Sidebar: decision boundary adjustment
 st.sidebar.markdown("---")
-st.sidebar.header("Optional Decision Boundary Adjustment")
+st.sidebar.header("Optional Threshold Adjustment")
 with st.sidebar.expander("ℹ️ Why to adjust FNR?"):
     for line in get_fnr_explanation():
         st.caption(line)
@@ -119,11 +126,10 @@ with st.sidebar.expander("ℹ️ SVM parameters and performance"):
         "- Polynomial degree: 2\n"
         "- Regularization parameter (C): 0.1\n"
         "- Coef0: 0.5\n"
-        "- Gamma: 0.1\n"
-        "- Total support vectors (SV): 40\n"
-        "- Training samples: 197\n"
+        "- Gamma: scale\n"
+        "- Training samples: 165\n"
         "- Test samples: 23\n"
-        "- SV (% of training data): 20%\n"
+        "- SV (% of training data): 18%\n"
         "- Cross-validation AUC (5-fold): 1.0 ± 0"
     )
   
@@ -164,7 +170,14 @@ df_display.index = range(1, len(df_display) + 1)
 st.dataframe(df_display, use_container_width=True)
 
 # PCA Projection: Training vs. New Samples
-chart = create_pca_chart(pipeline, df_train, df_new, expected_cols)
+warnings.filterwarnings(
+    "ignore",
+    message="X does not have valid feature names*",
+    category=UserWarning,
+    module="sklearn.utils.validation",
+)
+
+chart = create_pca_chart(pipeline_calc, pca2, df_train, df_new, expected_cols)
 st.altair_chart(chart, use_container_width=True)
 
 # Display current decision threshold
@@ -179,7 +192,7 @@ if st.button("Run Prediction"):
 
     # Preprocess input data
     X_input_df = pd.DataFrame(df_new[expected_cols], columns=expected_cols)
-    decision_scores = pipeline.decision_function(X_input_df)
+    decision_scores = pipeline_calc.decision_function(X_input_df)
  
     # Round decision scores to 2 decimal places
     rounded_scores = np.round(decision_scores, 2)
@@ -199,8 +212,9 @@ if st.button("Run Prediction"):
 
     # Plot decision boundary
     fig = create_matplotlib_decision_plot(
-        pipeline, df_train, df_new, expected_cols, threshold, fnr
+    pipeline_calc, pca2, df_train, df_new, expected_cols, threshold, fnr
     )
+
     st.pyplot(fig)
 
     # Display results table

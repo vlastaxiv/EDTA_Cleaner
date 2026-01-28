@@ -11,14 +11,14 @@ from functools import lru_cache
 import importlib
 from pathlib import Path
 
-# === Paths for Data Files ===
+# Paths for Data Files
 # Project root and data directory
 ROOT = Path(__file__).resolve().parent.parent
 DATA_DIR = ROOT / "data"
-TRAIN_DATA_PATH = DATA_DIR / "train_197_data.csv"
+TRAIN_DATA_PATH = DATA_DIR / "train_165_data.csv"
 EXAMPLE_DATA_PATH = DATA_DIR / "example_new_samples.csv"
 
-# === Constants for Upload ===
+# Constants for Upload
 REFERENCE_GENES = ["GAPDH", "GUSB", "PPIB"]
 UPLOAD_COLUMNS = [
     "sample",
@@ -36,9 +36,9 @@ UPLOAD_COLUMNS = [
 # thresholds.py or utils.py (shared constants)
 # Safe decision threshold (tested on train + test1 + test2)
 # This ensures zero false negatives on known data
-SAFE_THRESHOLD = -0.56  # fixed threshold based on test2 (FNR = 0)
+SAFE_THRESHOLD = -0.6750643265606378  # fixed threshold based on test2 (FNR = 0)
 
-# === Cached Data Loaders ===
+# Cached Data Loaders
 @lru_cache(maxsize=1)
 def get_training_data() -> pd.DataFrame:
     """
@@ -54,7 +54,7 @@ def get_example_data() -> pd.DataFrame:
     return pd.read_csv(EXAMPLE_DATA_PATH)
 
 
-# === Pipeline Loader ===
+# Pipeline Loader
 def load_pipeline(pipeline_path: str):
     """
     Load and return an sklearn Pipeline that already
@@ -136,7 +136,7 @@ def get_new_data(use_example: bool, new_file) -> pd.DataFrame:
     return df
 
 
-# === Validation for Pipeline Data ===
+# Validation for Pipeline Data
 def validate_data(df: pd.DataFrame, required_cols: list) -> None:
     """
     Ensure the DataFrame contains the required columns. Raise ValueError if missing.
@@ -146,24 +146,34 @@ def validate_data(df: pd.DataFrame, required_cols: list) -> None:
         raise ValueError(f"Missing required columns: {missing}")
 
 
-# === Visualization Utilities ===
-def create_pca_chart(pipeline, df_train: pd.DataFrame, df_new: pd.DataFrame, expected_cols: list):
+# Visualization Utilities
+def create_pca_chart(calc_pipeline, pca2, df_train: pd.DataFrame, df_new: pd.DataFrame, expected_cols: list):
     """
-    Generate an Altair PCA projection chart for training vs. new samples.
+    Altair PCA2 projection: train vs new samples.
+    PCA2 is a standalone object (pca2.joblib). Scaling is taken from calc_pipeline.
     """
-    scaler = pipeline.named_steps['scaler']
-    pca = pipeline.named_steps['pca']
-    X_train = scaler.transform(df_train[expected_cols])
-    X_new = scaler.transform(df_new[expected_cols])
-    pc_train = pca.transform(X_train)[:, :2]
-    pc_new = pca.transform(X_new)[:, :2]
-    df_plot = pd.DataFrame(np.vstack([pc_train, pc_new]), columns=['PC1', 'PC2'])
-    df_plot['Set'] = ['Train'] * len(pc_train) + ['Test'] * len(pc_new)
-    chart = alt.Chart(df_plot).mark_circle(size=60).encode(x='PC1', y='PC2', color='Set').properties(width=600, height=400, title='PCA Projection: Training vs. New Samples')
+    scaler = calc_pipeline.named_steps["scaler"]
+
+    X_train_scaled = scaler.transform(df_train[expected_cols])
+    X_new_scaled   = scaler.transform(df_new[expected_cols])
+
+    pc_train = pca2.transform(X_train_scaled)
+    pc_new   = pca2.transform(X_new_scaled)
+
+    df_plot = pd.DataFrame(np.vstack([pc_train, pc_new]), columns=["PC1", "PC2"])
+    df_plot["Set"] = ["Train"] * len(pc_train) + ["Test"] * len(pc_new)
+
+    chart = (
+        alt.Chart(df_plot)
+        .mark_circle(size=60)
+        .encode(x="PC1", y="PC2", color="Set")
+        .properties(width=600, height=400, title="PCA Projection: Training vs. New Samples")
+    )
     return chart
 
 def create_matplotlib_decision_plot(
-    pipeline,
+    calc_pipeline,
+    pca2,
     df_train: pd.DataFrame,
     df_new: pd.DataFrame,
     expected_cols: list,
@@ -171,75 +181,82 @@ def create_matplotlib_decision_plot(
     fnr: int
 ) -> plt.Figure:
     """
-    Generate a matplotlib figure showing decision boundary at given threshold.
-    Uses the same rounding and threshold logic as in app.py (== threshold -> 0).
+    Decision boundary plotted in PCA2 space (visual only),
+    but scores are computed by the calc_pipeline in original 7D feature space.
+
+    Matches jupyter3 logic:
+    PCA-grid -> inverse PCA -> inverse scaler -> pipeline.decision_function
     """
-    scaler = pipeline.named_steps['scaler']
-    pca = pipeline.named_steps['pca']
-    model = pipeline.named_steps['model']
+    scaler = calc_pipeline.named_steps["scaler"]
 
-    # PCA transform
-    X_train_pca = pca.transform(scaler.transform(df_train[expected_cols]))[:, :2]
-    X_unknown_pca = pca.transform(scaler.transform(df_new[expected_cols]))[:, :2]
+    # PCA projection (for scatter only)
+    X_train_pca = pca2.transform(scaler.transform(df_train[expected_cols]))
+    X_new_pca   = pca2.transform(scaler.transform(df_new[expected_cols]))
 
-    # Decision scores (train + new)
-    train_scores = model.decision_function(pca.transform(scaler.transform(df_train[expected_cols])))
-    unk_scores   = model.decision_function(pca.transform(scaler.transform(df_new[expected_cols])))
+    # Decision scores (true model space)
+    train_scores = calc_pipeline.decision_function(df_train[expected_cols])
+    unk_scores   = calc_pipeline.decision_function(df_new[expected_cols])
 
-    # Round to 2 decimals (same as app.py)
     rounded_train_scores = np.round(train_scores, 2)
     rounded_unk_scores   = np.round(unk_scores, 2)
 
-    # Apply threshold: > threshold -> 1, == threshold -> 0
-    y_train_orig = (rounded_train_scores > threshold).astype(int)
-    y_train_orig = np.where(rounded_train_scores == threshold, 0, y_train_orig)
+    y_train = (rounded_train_scores > threshold).astype(int)
+    y_train = np.where(rounded_train_scores == threshold, 0, y_train)
 
-    y_unk_orig = (rounded_unk_scores > threshold).astype(int)
-    y_unk_orig = np.where(rounded_unk_scores == threshold, 0, y_unk_orig)
+    y_unk = (rounded_unk_scores > threshold).astype(int)
+    y_unk = np.where(rounded_unk_scores == threshold, 0, y_unk)
 
-    # Grid for boundary
+    # Grid in PCA space
     x_min, x_max = X_train_pca[:, 0].min() - 1, X_train_pca[:, 0].max() + 1
     y_min, y_max = X_train_pca[:, 1].min() - 1, X_train_pca[:, 1].max() + 1
-    xx, yy = np.meshgrid(np.linspace(x_min, x_max, 200),
-                         np.linspace(y_min, y_max, 200))
-    grid = np.c_[xx.ravel(), yy.ravel()]
+
+    xx, yy = np.meshgrid(
+        np.linspace(x_min, x_max, 200),
+        np.linspace(y_min, y_max, 200)
+    )
+
+    grid_pca2 = np.c_[xx.ravel(), yy.ravel()]          # (n, 2)
+    grid_scaled = pca2.inverse_transform(grid_pca2)    # (n, 7) in SCALED space
+    grid_raw    = scaler.inverse_transform(grid_scaled) # (n, 7) in RAW space
+
+    Z = calc_pipeline.decision_function(grid_raw).reshape(xx.shape)
 
     # Plot
     fig, ax = plt.subplots(figsize=(8, 6))
-    Z = model.decision_function(grid).reshape(xx.shape)
-    ax.contour(xx, yy, Z, levels=[threshold], colors='k', linewidths=1)
+    ax.contour(xx, yy, Z, levels=[threshold], colors="k", linewidths=1)
 
-    # Training and new samples
-    ax.scatter(*X_train_pca.T, c=y_train_orig,
+    ax.scatter(*X_train_pca.T, c=y_train,
                cmap=mcolors.ListedColormap(["#eb9696", "#5ECEAC"]),
-               marker='x', label='Training')
-    ax.scatter(*X_unknown_pca.T, c=y_unk_orig,
+               marker="x", label="Training")
+    ax.scatter(*X_new_pca.T, c=y_unk,
                cmap=mcolors.ListedColormap(["#eb9696", "#5ECEAC"]),
-               edgecolors='k', label='Predictions')
+               edgecolors="k", label="Predictions")
 
-    ax.set_xlabel('PC 1')
-    ax.set_ylabel('PC 2')
-    ax.set_title(f'SVM Decision Boundary for FNR {fnr}%')
-    ax.legend(loc='upper left')
+    ax.set_xlabel("PC 1")
+    ax.set_ylabel("PC 2")
+    ax.set_title(f"SVM Decision Boundary for FNR {fnr}%")
+    ax.legend(loc="upper left")
     ax.grid(True)
 
-    ax.set_facecolor('white')
-    fig.patch.set_facecolor('white')
+    ax.set_facecolor("white")
+    fig.patch.set_facecolor("white")
     return fig
 
 
-# === FNR mapping and styling ===
+
+# FNR mapping and styling
 FNR_TO_THRESHOLD = {
-    0: -0.56,
-    1: -0.57,
-    2: -0.58,
-    3: -0.59,
-    4: -0.60,
-    5: -0.61,
-    6: -0.62,
-    7: -0.63,
-    8: -0.64,
-    9: -0.66,
+    0: -0.6750643265606378,
+    1: -0.679843198729745,
+    2: -0.6846220708988522,
+    3: -0.6894009430679594,
+    4: -0.6941798152370666,
+    5: -0.6989586874061738,
+    6: -0.7037375595752811,
+    7: -0.7085164317443882,
+    8: -0.7132953039134955,
+    9: -0.7180741760826026,
+    10: -0.7228530482517099
 }
 
 def highlight_pred(val):
@@ -256,15 +273,13 @@ def get_fnr_explanation() -> list[str]:
     """
     return [ 
         "**Increasing FNR**, "
-        "shifts the decision threshold toward the OK class, permitting a limited fraction of samples with borderline-altered gene expression to be classified as good quality samples.  "
+        "shifts the decision threshold toward the altered class, making the filter less strict. This allows a limited fraction of borderline altered samples to be classified as OK.  "
         "Because our altered-expression criteria are very stringent, these marginal cases pose minimal risk.",
 
-        "**FNR = 0 %**  The strictest setting. "
-        "The decision threshold sits at the extreme edge of the altered distribution, "
-        "so everything else—even borderline cases—is classified as OK.",
+        "**FNR = 0 %**  The strictest setting (safe threshold). "
+        "The decision threshold is placed at the edge of the altered distribution so that no altered sample is classified as OK.",
         
-        "**Maximum FNR = 9 %**  The highest FNR that still maintains 100 % specificity on the training set "
-        "(i.e. no altered training sample is classified wrongly)."
+        "**Maximum FNR = 10 %**  The highest FNR in this app. It maintains 100 % specificity on the training set (i.e. no good-quality training sample is classified as altered)."
     ]
 
 
@@ -280,7 +295,7 @@ def normalize_qpcr(df: pd.DataFrame, feature_cols: list[str]) -> pd.DataFrame:
     # Compute mean Cq of reference genes
     df_norm["Ct_ref_mean"] = df_norm[REFERENCE_GENES].mean(axis=1)
 
-    # Apply –ΔCt to each feature column
+    # Apply –ΔCq to each feature column
     for gene in feature_cols:
         df_norm[gene] = (df_norm[gene] - df_norm["Ct_ref_mean"])
 
