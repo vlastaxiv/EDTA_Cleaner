@@ -40,6 +40,8 @@ This code is provided for review purposes only.
 It may not be copied, modified, or used in any form until the associated manuscript is published.  
 Upon publication, a permissive license will be attached.  
 
+---
+
 # B. Application usage
 
 ## 🔽 Clone the Repository
@@ -48,7 +50,6 @@ Upon publication, a permissive license will be attached.
 git clone https://github.com/vlastaxiv/EDTA_Cleaner.git
 cd EDTA_Cleaner
 
----
 
 ## 🚀 Installation
 
@@ -77,7 +78,6 @@ venv\Scripts\activate
 
 pip install -r requirements.txt
 ```
----
 
 ## 🎬 Usage
 
@@ -109,7 +109,6 @@ streamlit run src/app.py
    - Inspect the styled results table (white = OK, red = altered).  
    - Download an Excel report.
 
----
 
 ## 📁 Repository Structure
 
@@ -124,9 +123,7 @@ The repository contains the following key components:
 - `environment.yml` — conda environment specification
 - `README.md` — project documentation (this file)
    
----
 ## 📊 Input Data & Data Format
----
 
 ###  Input file format for prediction
 
@@ -153,7 +150,6 @@ sample, BTG3, CD69, CXCR1, CXCR2, FCGR3A, GAPDH, GUSB, JUN, PPIB, STEAP4
 - data/SVM_training_data.csv — processed input data (-ΔCq values) used for model training.
 - data_for_testing/ — example files for user testing and error handling demonstration.
 
----
 
 ## ❌ Error Handling
 
@@ -165,13 +161,11 @@ sample, BTG3, CD69, CXCR1, CXCR2, FCGR3A, GAPDH, GUSB, JUN, PPIB, STEAP4
   - Missing values
   - Incorrect file format (only CSV or XLSX accepted)
 
----
 
 ## Contributions
 
 This repository is not open for external contributions. For any issues or questions, please contact the author directly.
 
----
 
 ## 📑 Citation
 
