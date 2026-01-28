@@ -79,6 +79,7 @@ venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
+
 ## 🎬 Usage
 
 1. **Start the app** 
@@ -110,6 +111,7 @@ streamlit run src/app.py
    - Download an Excel report.
 
 
+
 ## 📁 Repository Structure
 
 The repository contains the following key components:
@@ -122,6 +124,7 @@ The repository contains the following key components:
 - `requirements.txt` — list of required Python packages
 - `environment.yml` — conda environment specification
 - `README.md` — project documentation (this file)
+
    
 ## 📊 Input Data & Data Format
 
