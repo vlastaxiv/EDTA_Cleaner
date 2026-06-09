@@ -32,11 +32,12 @@ UPLOAD_COLUMNS = [
     "JUN",
     "PPIB",    # reference
     "STEAP4"]
+NUMERIC_UPLOAD_COLUMNS = [col for col in UPLOAD_COLUMNS if col != "sample"]
 
 # thresholds.py or utils.py (shared constants)
-# Safe decision threshold (tested on train + test1 + test2)
-# This ensures zero false negatives on known data
-SAFE_THRESHOLD = -0.6750643265606378  # fixed threshold based on test2 (FNR = 0)
+# Safe operating threshold used for FNR = 0.
+# Defined from reference data during model development and used without recalibration.
+SAFE_THRESHOLD = -0.6750643265606378
 
 # Cached Data Loaders
 @lru_cache(maxsize=1)
@@ -57,8 +58,7 @@ def get_example_data() -> pd.DataFrame:
 # Pipeline Loader
 def load_pipeline(pipeline_path: str):
     """
-    Load and return an sklearn Pipeline that already
-    contains scaler, PCA, and the SVM model (with probability=True).
+    Load and return a saved sklearn object used by the app.
     """
     return joblib.load(pipeline_path)
 
@@ -87,15 +87,25 @@ def read_and_unify(file_buffer: io.BytesIO) -> pd.DataFrame:
         except Exception as e:
             raise ValueError(f"Cannot read CSV file: {e}")
 
-    # Normalize decimals and convert numeric columns
+    # Normalize decimals and convert measured Cq columns. Keep sample IDs unchanged.
     df = df.replace({',': '.'}, regex=True)
 
-    # Attempt numeric conversion; ignore errors
-    for col in df.columns:
-        try:
-            df[col] = pd.to_numeric(df[col])
-        except Exception:
-            pass
+    present_numeric_cols = [col for col in NUMERIC_UPLOAD_COLUMNS if col in df.columns]
+    invalid_columns = []
+    for col in present_numeric_cols:
+        converted = pd.to_numeric(df[col], errors="coerce")
+        invalid_mask = converted.isna() & df[col].notna()
+        if invalid_mask.any():
+            invalid_columns.append(col)
+        df[col] = converted
+
+    if invalid_columns:
+        raise ValueError(
+            "The uploaded table contains non-numeric values in these measured "
+            f"columns: {sorted(invalid_columns)}. Please correct the table and "
+            "upload it again. The 'sample' column may contain text, but all "
+            "Cq/gene columns must contain numeric values."
+        )
 
     return df
 
@@ -262,9 +272,9 @@ FNR_TO_THRESHOLD = {
 def highlight_pred(val):
     """Return CSS style string based on the prediction value."""
     if val == 'Sample quality is OK.':
-        return 'background-color: white'
+        return 'background-color: white; color: black'
     else:
-        return 'background-color: #eb9696'
+        return 'background-color: #eb9696; color: black'
 
 
 def get_fnr_explanation() -> list[str]:
@@ -272,14 +282,11 @@ def get_fnr_explanation() -> list[str]:
     Returns the three key points explaining FNR behavior.
     """
     return [ 
-        "**Increasing FNR**, "
-        "shifts the decision threshold toward the altered class, making the filter less strict. This allows a limited fraction of borderline altered samples to be classified as OK.  "
-        "Because our altered-expression criteria are very stringent, these marginal cases pose minimal risk.",
+        "**False Negative Rate (FNR)** controls how strict the app is when deciding whether a sample is OK according to the pipeline.",
 
-        "**FNR = 0 %**  The strictest setting (safe threshold). "
-        "The decision threshold is placed at the edge of the altered distribution so that no altered sample is classified as OK.",
+        "**FNR = 0%** uses the most conservative validated operating threshold, called the safe threshold. Only samples above this threshold are classified as OK.",
         
-        "**Maximum FNR = 10 %**  The highest FNR in this app. It maintains 100 % specificity on the training set (i.e. no good-quality training sample is classified as altered)."
+        "**Increasing FNR** shifts the operating threshold, so more borderline samples may be classified as OK according to the pipeline."
     ]
 
 

@@ -1,4 +1,3 @@
----
 # EDTA Blood RNA QC
 
 A Streamlit app for automated quality control of EDTA-tube blood RNA profiles using a custom-trained Support Vector Machine (SVM) model.
@@ -31,99 +30,191 @@ The model was developed on internally generated experimental data. The app perfo
 
 # A. Licence
 
-⚠️ **Important notice** 
+This project is released under the MIT License.
 
-Copyright (c) 2026 Vlasta Korenková.  
-All rights reserved.  
+Copyright (c) 2026 Vlasta Korenková.
 
-This code is provided for review purposes only.  
-It may not be copied, modified, or used in any form until the associated manuscript is published.  
-Upon publication, a permissive license will be attached.  
+See the [LICENSE](LICENSE) file for details.
 
 ---
 
 # B. Application usage
 
-## 🔽 Clone the Repository
+## Download the Repository
 
-```bash
+All commands shown in grey boxes below should be typed into a command-line window:
+
+- **Windows:** open **PowerShell** or **Command Prompt** from the Start menu.
+- **macOS:** open **Terminal** from Applications > Utilities.
+- **Linux:** open your usual terminal application.
+
+You can also use the built-in terminal in Visual Studio Code: open the project folder in VS Code, then choose **Terminal > New Terminal**.
+
+First download the project folder from GitHub to your computer:
+
+```text
 git clone https://github.com/vlastaxiv/EDTA_Cleaner.git
+```
+
+Then go into the downloaded folder:
+
+```text
 cd EDTA_Cleaner
+```
+
+Keep the EDTA_Cleaner folder in one stable location on your computer after setup. If you move or rename the folder later, open a new terminal and run cd into the new location before starting the app again.
 
 
-## 🚀 Installation
+## Installation
+
+The app needs its own Python environment. Create and activate the environment before starting the app.
+
+The environment only needs to be created once. After it has been created, you do not need to repeat the creation step every time. However, you must activate the environment each time before starting the app.
 
 **Requirements**
 
-- Python 3.13.2
-- Git
-- Conda (recommended) or venv
-- Python packages listed in requirements.txt (installed automatically during setup)
+- Python 3.10.18
+- Python packages listed in src/requirements.txt or src/environment.yml
+- Conda (recommended) or Python venv
 
-### Conda (recommended)
+Choose **one** of the installation options below.
 
-```bash
-conda env create -f environment.yml
-conda activate predikce_env
+The Conda environment in this guide is called **edta_cleaner**.
+
+The Python venv folder in this guide is called **edta_cleaner_venv**.
+
+If you are a beginner, keep these names exactly as written. If you choose a different name, you must use your own name in all later activation commands too.
+
+### Option 1: Conda environment (recommended)
+
+Create the environment from the included Conda file. This command creates a Conda environment named **edta_cleaner**:
+
+```text
+conda env create -n edta_cleaner -f src/environment.yml
 ```
 
-### pip + venv
+Run this creation command only once.
 
-```bash
-python -m venv venv
-# macOS/Linux
-source venv/bin/activate
-# Windows
-venv\Scripts\activate
+The app is now installed. To start it, continue to the Usage section below.
 
-pip install -r requirements.txt
+### Option 2: Python venv + pip
+
+Create a virtual environment inside the project folder. This command creates a folder named **edta_cleaner_venv**.
+
+On Windows:
+
+```text
+py -3.10 -m venv edta_cleaner_venv
 ```
 
+On macOS / Linux:
 
-## 🎬 Usage
+```text
+python3.10 -m venv edta_cleaner_venv
+```
 
-1. **Start the app** 
+Run this creation command only once.
 
-```bash
-streamlit run src/app.py
+Activate the environment now so that the required packages are installed into it.
+
+On Windows:
+
+```text
+edta_cleaner_venv\Scripts\activate
+```
+
+On macOS / Linux:
+
+```text
+source edta_cleaner_venv/bin/activate
+```
+
+Install the required packages:
+
+```text
+pip install -r src/requirements.txt
+```
+
+The app is now installed. To start it, continue to the Usage section below.
+
+
+## Usage
+
+### Quick start
+
+Use these steps when you simply want to start the app.
+
+1. Open a terminal in the EDTA_Cleaner folder.
+
+2. Activate the environment according to the installation option you used.
+
+   If you installed the app with Conda:
+
+   ```text
+   conda activate edta_cleaner
    ```
 
-2. **Built-in example**  
-   - Check **Built-in example dataset** in the sidebar to instantly load demo data.
+   If you installed the app with Python venv on Windows:
 
-3. **Upload your own data**  
-   - Click **Browse files** and select a CSV or Excel (.xlsx) file containing these columns (any order):  
-     ```
-     sample, BTG3, CD69, CXCR1, CXCR2, FCGR3A, GAPDH, GUSB, JUN, PPIB, STEAP4
-     ```
-   - No missing values allowed. Decimal commas will be auto-converted to dots.
+   ```text
+   edta_cleaner_venv\Scripts\activate
+   ```
 
-4. **Adjust the False Negative Rate (FNR)**  
-   - Use the slider to shift the decision threshold:
-     - **0 %** is strictest.
-     - **Increasing FNR** permits more borderline samples to pass as OK samples.
-     - **Max 10 %** keeps 100 % specificity on training data.
+   If you installed the app with Python venv on macOS / Linux:
 
-5. **Run Prediction**  
-   - Click **Run Prediction**.  
-   - View SVM decision-boundary plot.  
-   - Inspect the styled results table (white = OK, red = altered).  
-   - Download an Excel report.
+   ```text
+   source edta_cleaner_venv/bin/activate
+   ```
 
+3. Start the app:
+
+   ```text
+   streamlit run src/app.py
+   ```
+
+4. The Streamlit app should open automatically in a new browser window or tab.
+
+### Optional next steps inside the app
+
+After the app is open, choose what you want to do.
+
+- **Try the demo dataset**
+
+  The built-in example dataset is optional. It is only a demo dataset for testing that the app works. You do not need to use it before uploading your own data.
+
+  To use the demo data, select **Built-in example dataset** in the sidebar.
+
+- **Upload your own data**
+
+  To analyze your own samples, click **Browse files** and select a CSV or Excel (.xlsx) file.
+
+  Your file must follow the input format described in the **Input Data & Data Format** section below.
+
+- **Adjust the False Negative Rate (FNR)**
+
+  False Negative Rate (FNR) controls how strict the app is when deciding whether a sample is OK according to the pipeline.
+
+  At **FNR = 0%**, the app uses the most conservative validated operating threshold, called the safe threshold. Only samples above this threshold are classified as OK.
+
+  Increasing FNR shifts the operating threshold, so more borderline samples may be classified as OK according to the pipeline.
+
+- **Run prediction and export results**
+
+  Click **Run Prediction** to calculate the quality assessment. The app will show the SVM decision-boundary plot and the results table. You can then download the Excel report.
 
 
 ## 📁 Repository Structure
 
 The repository contains the following key components:
 
-- `src/` — Streamlit app and utility scripts
-- `models/` — saved trained model pipeline (`final_pipeline_prob.joblib`)
-- `notebooks/` — Jupyter notebooks used for model development and evaluation
-- `data/` — input dataset used for model training (`SVM_training_data.csv`)
-- `data_for_testing/` — example files for user testing and upload validation
-- `requirements.txt` — list of required Python packages
-- `environment.yml` — conda environment specification
-- `README.md` — project documentation (this file)
+- src/ — Streamlit app and utility scripts
+- models/ — saved trained model pipeline (final_pipeline_v1_2025-12-09.joblib), PCA object (pca2.joblib), and safe threshold (safe_threshold.json)
+- notebooks/ — Jupyter notebooks used for model development and evaluation
+- data/ — input dataset used for model training (train_165_data.csv)
+- data_for_testing/ — example files for user testing and upload validation
+- src/requirements.txt — list of required Python packages
+- src/environment.yml — conda environment specification
+- README.md — project documentation (this file)
 
    
 ## 📊 Input Data & Data Format
@@ -132,7 +223,9 @@ The repository contains the following key components:
 
 - File format: **CSV** or **Excel (.xlsx)**
 - Each row corresponds to one sample.
-- **⚠ All values must be raw Cq values as directly exported from the qPCR machine (unprocessed, not normalized).**
+- The first column must be named **sample** and should contain sample names or sample IDs.
+- All gene columns must contain raw Cq values as directly exported from the qPCR machine.
+- Do not upload already normalized data; normalization is performed automatically in the app.
 - Required columns:
 sample, BTG3, CD69, CXCR1, CXCR2, FCGR3A, GAPDH, GUSB, JUN, PPIB, STEAP4
 - No missing values allowed.
@@ -140,24 +233,23 @@ sample, BTG3, CD69, CXCR1, CXCR2, FCGR3A, GAPDH, GUSB, JUN, PPIB, STEAP4
 
 ### Reference genes used for normalization
 
-- `GAPDH, GUSB, PPIB`
+- GAPDH, GUSB, PPIB
 
 ### ΔCq normalization (performed automatically in the Streamlit app)
 
 1. Compute mean Cq of reference genes for each sample.
 2. ΔCq = (Cq_gene – Cq_ref_mean)
-3. Final value = –ΔCq
 
 ### Data included in repository
 
-- data/SVM_training_data.csv — processed input data (-ΔCq values) used for model training.
+- data/train_165_data.csv — processed input data (ΔCq values) used for model training.
 - data_for_testing/ — example files for user testing and error handling demonstration.
 
 
 ## ❌ Error Handling
 
 - The app validates input files before processing.
-- File-format or validation errors display a friendly `⚠️` warning in the main panel.
+- File-format or validation errors display a friendly warning in the main panel.
 - Common errors handled:
   - Missing required columns
   - Non-numeric or invalid Cq values
@@ -183,7 +275,7 @@ Korenková V. EDTA Cleaner – Streamlit app for EDTA blood RNA quality control 
 
 ## ✉️ Contact
 
-For questions or support, please contact: `ctrnacta@yahoo.com`.  
+For questions or support, please contact: ctrnacta@yahoo.com.  
 
 _Last updated: 2026-01-28_
 
@@ -217,7 +309,7 @@ The SVM model was developed using blood RNA profiles obtained from EDTA tubes.
 
 The pipelines are stored in the models/ directory:
 
-   - final_pipeline_v1_2025-12-09.joblib — complete pipeline containing StandardScaler, PCA transformation, and trained SVM classifier
+   - final_pipeline_v1_2025-12-09.joblib — deployed classification pipeline
    - pca2.joblib - PCA model used only for 2D visualization
    - safe_threshold.json - stored safe-threshold value used as the strictest operating point (FNR = 0)
 

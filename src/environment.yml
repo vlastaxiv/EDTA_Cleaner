@@ -1,4 +1,4 @@
-name: predikce_env
+name: edta_cleaner
 channels:
   - conda-forge
 dependencies:
@@ -10,5 +10,6 @@ dependencies:
   - joblib=1.2.0
   - streamlit=1.42.0
   - openpyxl=3.1.5
+  - xlsxwriter=3.2.2
   - jupyter=1.1.1
   - ipykernel=6.29.5

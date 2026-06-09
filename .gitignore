@@ -6,8 +6,12 @@
 .vscode/
 
 
+# Streamlit config
+!.streamlit/
+!.streamlit/config.toml
+
 # Streamlit cache and logs
-.streamlit/
+.streamlit/cache/
 *.log
 
 # Ignored local Conda env folder (pokud jej máš v projektu)

@@ -1,16 +1,24 @@
-# src/test_proba.py
-
 from pathlib import Path
-from utils import load_pipeline
 
-# Najdi kořen projektu (o úroveň výš než src/)
+import numpy as np
+
+from utils import get_training_data, load_pipeline
+
+
 ROOT = Path(__file__).resolve().parent.parent
-PIPELINE_PATH = ROOT / "models" / "final_pipeline_prob.joblib"
+PIPELINE_PATH = ROOT / "models" / "final_pipeline_v1_2025-12-09.joblib"
 
-# Načti kompletní pipeline
 pipeline = load_pipeline(str(PIPELINE_PATH))
-model = pipeline.named_steps['model']
+expected_cols = list(pipeline.feature_names_in_)
 
-# Jednoduchá kontrola, že model umí predict_proba
-assert hasattr(model, "predict_proba"), "Model must implement predict_proba"
-print("✔ predict_proba exists!")
+assert expected_cols == ["BTG3", "CD69", "CXCR1", "CXCR2", "FCGR3A", "JUN", "STEAP4"], (
+    f"Unexpected feature columns: {expected_cols}"
+)
+
+df_train = get_training_data()
+scores = pipeline.decision_function(df_train[expected_cols])
+
+assert scores.shape == (len(df_train),), f"Unexpected score shape: {scores.shape}"
+assert np.isfinite(scores).all(), "Non-finite scores in training data"
+
+print("Pipeline smoke test passed.")
