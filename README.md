@@ -1,6 +1,6 @@
 # EDTA Blood RNA QC
 
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.20616060.svg)](https://doi.org/10.5281/zenodo.20616060)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.20665116.svg)](https://doi.org/10.5281/zenodo.20665116)
 
 A Streamlit app for automated quality control of EDTA-tube blood RNA profiles using a custom-trained Support Vector Machine (SVM) model.
 The model was developed on internally generated experimental data. The app performs ΔCq normalization (using internal reference genes) and evaluates each sample using a fixed preprocessing and classification pipeline. PCA is used only for visualization (2D projection); classification is computed in the full feature space. Features include interactive PCA plots, adjustable False Negative Rate (FNR) thresholds, and Excel report export.
@@ -52,7 +52,12 @@ All commands shown in grey boxes below should be typed into a command-line windo
 
 You can also use the built-in terminal in Visual Studio Code: open the project folder in VS Code, then choose **Terminal > New Terminal**.
 
-First download the project folder from GitHub to your computer:
+The archived software release used in the manuscript is available on Zenodo:
+
+```text
+git clone https://doi.org/10.5281/zenodo.20665116
+```
+Alternatively, the repository can be downloaded from GitHub:
 
 ```text
 git clone https://github.com/vlastaxiv/EDTA_Cleaner.git
@@ -63,6 +68,9 @@ Then go into the downloaded folder:
 ```text
 cd EDTA_Cleaner
 ```
+To use the archived release corresponding to Zenodo version v1.0.1, switch to that release:
+
+git checkout v1.0.1
 
 Keep the EDTA_Cleaner folder in one stable location on your computer after setup. If you move or rename the folder later, open a new terminal and run cd into the new location before starting the app again.
 
@@ -296,7 +304,7 @@ This repository is not open for external contributions. For any issues or questi
 
 If you use EDTA Cleaner, please cite the archived software release:
 
-Korenková V. (2026). EDTA Cleaner (v1.0.1). Zenodo. https://doi.org/10.5281/zenodo.20616060
+Korenková V. (2026). EDTA Cleaner (v1.0.1). Zenodo. https://doi.org/10.5281/zenodo.20665116
 
 If you use this code or parts of this pipeline in your own work or publication, please cite the associated article:
 
