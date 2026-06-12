@@ -207,14 +207,8 @@ def create_matplotlib_decision_plot(
     train_scores = calc_pipeline.decision_function(df_train[expected_cols])
     unk_scores   = calc_pipeline.decision_function(df_new[expected_cols])
 
-    rounded_train_scores = np.round(train_scores, 2)
-    rounded_unk_scores   = np.round(unk_scores, 2)
-
-    y_train = (rounded_train_scores > threshold).astype(int)
-    y_train = np.where(rounded_train_scores == threshold, 0, y_train)
-
-    y_unk = (rounded_unk_scores > threshold).astype(int)
-    y_unk = np.where(rounded_unk_scores == threshold, 0, y_unk)
+    y_train = (train_scores > threshold).astype(int)
+    y_unk = (unk_scores > threshold).astype(int)
 
     # Grid in PCA space
     x_min, x_max = X_train_pca[:, 0].min() - 1, X_train_pca[:, 0].max() + 1

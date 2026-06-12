@@ -168,13 +168,41 @@ Use these steps when you simply want to start the app.
    source edta_cleaner_venv/bin/activate
    ```
 
-3. Start the app:
+3. Start the app from the project folder:
 
    ```text
-   streamlit run src/app.py
+   python run_streamlit.py
    ```
 
 4. The Streamlit app should open automatically in a new browser window or tab.
+   If it does not open automatically, copy the local URL printed in the
+   terminal into your browser. It usually looks like this:
+
+   ```text
+   http://localhost:8501
+   ```
+
+### Why not run Streamlit directly?
+
+Use `python run_streamlit.py` as the standard start command.
+
+On some Windows Conda installations, the direct command below may fail before
+the app is loaded:
+
+```text
+streamlit run src/app.py
+```
+
+The error can look like this:
+
+```text
+ssl.SSLError: [ASN1: NOT_ENOUGH_DATA] not enough data
+```
+
+This is caused by Python reading a malformed certificate from the Windows
+certificate store while Streamlit is starting. It is not an error in the EDTA
+Cleaner app or in the SVM model. The included `run_streamlit.py` launcher avoids
+that startup problem and then runs the same Streamlit app.
 
 ### Optional next steps inside the app
 
@@ -278,7 +306,7 @@ If you use this code or parts of this pipeline in your own work or publication, 
 
 For questions or support, please contact: ctrnacta@yahoo.com.  
 
-_Last updated: 2026-01-28_
+_Last updated: 2026-06-11_
 
 ----
 
@@ -288,23 +316,30 @@ _Last updated: 2026-01-28_
 
 The SVM model was developed using blood RNA profiles obtained from EDTA tubes.
 
-### 1️⃣ 1_SVM_model_kernel_26012026.ipynb 
+### 1️⃣ 1_SVM_model_kernel_20260126.ipynb 
 
 - kernel screening (polynomial vs RBF) on donor-disjoint folds using threshold-free evaluation ROC/AUC
 - selection of final hyperparameters
 
-### 2️⃣ 2_SVM_model_development_26012026.ipynb 
+### 2️⃣ 2_SVM_model_development_20260126.ipynb 
 
 - final model development: training of the fixed pipeline (StandardScaler + polynomial-kernel SVM)
 - validation on TEST2-R23
 - definition of the safe threshold (FNR = 0) as the maximum decision score observed among poor-quality samples in the reference data (DEV-165 + TEST2-R23)
 
-### 3️⃣ 3_SVM_decision_boundary_26012026.ipynb
+### 3️⃣ 3_SVM_decision_boundary_20260611.ipynb
 
 - model application and threshold exploration:
 - uses the unchanged final model (final_pipeline_v1_2025-12-09.joblib) together with the predefined thresholds (no retraining or recalibration)
 - computes decision scores for DEV-165, TEST1-23, TEST2-R23, and UNKNOWNS-69 and converts them to QC calls using fixed operating thresholds
 - visualizes the decision boundary in PCA space by evaluating the full-space classifier on a PCA grid mapped back to the original feature space (PCA is used for plotting only; classification is performed in the 7D marker space)
+
+### 4️⃣ 4_tumour_marker_case_study_silhouette_20260611.ipynb
+
+- reproduces the tumour-marker case-study analysis for UNKNOWNS-69
+- computes shared PC1-PC2 PCA projections for Fig. 6 and full-space silhouette scores for the manuscript and Supplementary Table S13
+- performs stratified random-removal analysis to test whether the EDTA Cleaner-filtered improvement exceeds arbitrary sample removal
+- uses the case-study CSV files stored in data/
 
 ## 📦 Model files
 

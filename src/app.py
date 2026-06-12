@@ -207,15 +207,9 @@ if st.button("Run Prediction"):
     # Preprocess input data
     X_input_df = pd.DataFrame(df_new[expected_cols], columns=expected_cols)
     decision_scores = pipeline_calc.decision_function(X_input_df)
- 
-    # Round decision scores to 2 decimal places
-    rounded_scores = np.round(decision_scores, 2)
    
     # Apply threshold: class 1 if score > threshold, otherwise class 0
-    preds = (rounded_scores > threshold).astype(int)
-
-    # Explicit override: if score == threshold, assign class 0
-    preds = np.where(rounded_scores == threshold, 0, preds)
+    preds = (decision_scores > threshold).astype(int)
 
     # generate prediction labels based on thresholded decision scores
     pred_labels = [
@@ -239,7 +233,7 @@ if st.button("Run Prediction"):
     sample_values = df_new["sample"].values if "sample" in df_new.columns else df_new[first_col].values
     df_result = pd.DataFrame({
         'sample': sample_values,
-        'decision_score': [f"{score:.2f}".rstrip('0').rstrip('.') for score in rounded_scores],
+        'decision_score': [f"{score:.2f}".rstrip('0').rstrip('.') for score in decision_scores],
         'prediction': pred_labels
     })
 
