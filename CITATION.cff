@@ -2,8 +2,8 @@ cff-version: 1.2.0
 message: "If you use EDTA Cleaner, please cite it using the metadata from this file."
 type: software
 title: "EDTA Cleaner"
-version: "1.0.0"
-date-released: "2026-06-09"
+version: "1.0.1"
+date-released: "2026-06-12"
 authors:
   - family-names: "Korenková"
     given-names: "Vlasta"

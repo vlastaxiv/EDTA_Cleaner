@@ -296,7 +296,7 @@ This repository is not open for external contributions. For any issues or questi
 
 If you use EDTA Cleaner, please cite the archived software release:
 
-Korenková V. (2026). EDTA Cleaner (v1.0.0). Zenodo. https://doi.org/10.5281/zenodo.20616060
+Korenková V. (2026). EDTA Cleaner (v1.0.1). Zenodo. https://doi.org/10.5281/zenodo.20616060
 
 If you use this code or parts of this pipeline in your own work or publication, please cite the associated article:
 
