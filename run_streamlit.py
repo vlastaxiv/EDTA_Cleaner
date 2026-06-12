@@ -28,11 +28,8 @@ def _load_default_certs_without_windows_store(
 
 ssl.SSLContext.load_default_certs = _load_default_certs_without_windows_store
 
-if len(sys.argv) == 1:
-    app_path = Path(__file__).resolve().parent / "src" / "app.py"
-    sys.argv = ["streamlit", "run", str(app_path)]
-else:
-    sys.argv = ["streamlit", *sys.argv[1:]]
+app_path = Path(__file__).resolve().parent / "src" / "app.py"
+sys.argv = ["streamlit", "run", str(app_path), *sys.argv[1:]]
 
 from streamlit.web.cli import main
 
