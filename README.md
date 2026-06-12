@@ -55,9 +55,9 @@ You can also use the built-in terminal in Visual Studio Code: open the project f
 The archived software release used in the manuscript is available on Zenodo:
 
 ```text
-git clone https://doi.org/10.5281/zenodo.20665116
+https://doi.org/10.5281/zenodo.20665116
 ```
-Alternatively, the repository can be downloaded from GitHub:
+For installation and routine use, download the current repository from GitHub:
 
 ```text
 git clone https://github.com/vlastaxiv/EDTA_Cleaner.git
@@ -68,10 +68,6 @@ Then go into the downloaded folder:
 ```text
 cd EDTA_Cleaner
 ```
-To use the archived release corresponding to Zenodo version v1.0.1, switch to that release:
-
-git checkout v1.0.1
-
 Keep the EDTA_Cleaner folder in one stable location on your computer after setup. If you move or rename the folder later, open a new terminal and run cd into the new location before starting the app again.
 
 
@@ -314,7 +310,7 @@ If you use this code or parts of this pipeline in your own work or publication, 
 
 For questions or support, please contact: ctrnacta@yahoo.com.  
 
-_Last updated: 2026-06-11_
+_Last updated: 2026-06-12_
 
 ----
 
