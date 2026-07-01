@@ -1,6 +1,6 @@
 # EDTA Blood RNA QC
 
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.20665116.svg)](https://doi.org/10.5281/zenodo.20665116)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.20616059.svg)](https://doi.org/10.5281/zenodo.20616059)
 
 A Streamlit app for automated quality control of EDTA-tube blood RNA profiles using a custom-trained Support Vector Machine (SVM) model.
 The model was developed on internally generated experimental data. The app performs ΔCq normalization (using internal reference genes) and evaluates each sample using a fixed preprocessing and classification pipeline. PCA is used only for visualization (2D projection); classification is computed in the full feature space. Features include interactive PCA plots, adjustable False Negative Rate (FNR) thresholds, and Excel report export.
@@ -52,10 +52,10 @@ All commands shown in grey boxes below should be typed into a command-line windo
 
 You can also use the built-in terminal in Visual Studio Code: open the project folder in VS Code, then choose **Terminal > New Terminal**.
 
-The archived software release used in the manuscript is available on Zenodo:
+The archived software versions are available on Zenodo:
 
 ```text
-https://doi.org/10.5281/zenodo.20665116
+[https://doi.org/10.5281/zenodo.20616059]
 ```
 For installation and routine use, download the current repository from GitHub:
 
@@ -300,7 +300,7 @@ This repository is not open for external contributions. For any issues or questi
 
 If you use EDTA Cleaner, please cite the archived software release:
 
-Korenková V. (2026). EDTA Cleaner (v1.0.1). Zenodo. https://doi.org/10.5281/zenodo.20665116
+Korenková V. (2026). EDTA Cleaner (v1.0.2). Zenodo. https://doi.org/10.5281/zenodo.20616059
 
 If you use this code or parts of this pipeline in your own work or publication, please cite the associated article:
 
