@@ -3,7 +3,7 @@
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.20616059.svg)](https://doi.org/10.5281/zenodo.20616059)
 
 A Streamlit app for automated quality control of EDTA-tube blood RNA profiles using a custom-trained Support Vector Machine (SVM) model.
-The model was developed on internally generated experimental data. The app performs ΔCq normalization (using internal reference genes) and evaluates each sample using a fixed preprocessing and classification pipeline. PCA is used only for visualization (2D projection); classification is computed in the full feature space. Features include interactive PCA plots, adjustable False Negative Rate (FNR) thresholds, and Excel report export.
+The model was developed on internally generated experimental data. The app performs ΔCq normalization (using internal reference genes) and evaluates each sample using a fixed preprocessing and classification pipeline. PCA is used only for visualization (2D projection); classification is computed in the full feature space. Features include interactive PCA plots, adjustable operating thresholds (FNR presets), and Excel report export.
 
 ---
 
@@ -224,13 +224,9 @@ After the app is open, choose what you want to do.
 
   Your file must follow the input format described in the **Input Data & Data Format** section below.
 
-- **Adjust the False Negative Rate (FNR)**
+- **Select an operating preset (FNR0–FNR10)**
 
-  False Negative Rate (FNR) controls how strict the app is when deciding whether a sample is OK according to the pipeline.
-
-  At **FNR = 0%**, the app uses the most conservative validated operating threshold, called the safe threshold. Only samples above this threshold are classified as OK.
-
-  Increasing FNR shifts the operating threshold, so more borderline samples may be classified as OK according to the pipeline.
+  FNR0 uses the highest affected reference score in DEV-165 and TEST2-R23. A sample passes only when its score exceeds the threshold. FNR1–FNR10 use percentiles of the nine affected TEST2-R23 reference scores. Their names describe calibration settings. Observed errors are reported in Notebook 3.
 
 - **Run prediction and export results**
 
@@ -328,13 +324,14 @@ The SVM model was developed using blood RNA profiles obtained from EDTA tubes.
 ### 2️⃣ 2_SVM_model_development_20260126.ipynb 
 
 - final model development: training of the fixed pipeline (StandardScaler + polynomial-kernel SVM)
-- validation on TEST2-R23
+- agreement against experimental classes joined by sample ID. At FNR0, 9/9 affected and 14/14 intact profiles agree on TEST2-R23, the technical repeat used in calibration. TEST1-23 shares one complete record with DEV-165 (`7_EDTA pre T0`). Donor independence of the evaluation set has not been established.
 - definition of the safe threshold (FNR = 0) as the maximum decision score observed among poor-quality samples in the reference data (DEV-165 + TEST2-R23)
 
 ### 3️⃣ 3_SVM_decision_boundary_20260611.ipynb
 
 - model application and threshold exploration:
-- uses the unchanged final model (final_pipeline_v1_2025-12-09.joblib) together with the predefined thresholds (no retraining or recalibration)
+- reproduces the operating presets for the archived model. Across FNR1–FNR10, 1/9 affected TEST2-R23 profiles passes and all 14 intact profiles pass. In UNKNOWNS-69, the numbers flagged at FNR0, FNR5 and FNR10 are 27, 25 and 24, respectively. Handling status in this set is unknown.
+- In the bundled example (23 TEST2-R23 and 69 unknown samples), all 92 decision scores and all 1,012 sample/preset calls matched the released v1.0.2 scoring rule. The affected sample `EDTA T24 3` scores exactly at the FNR0 threshold and is flagged there. It passes at FNR1 through FNR10.
 - computes decision scores for DEV-165, TEST1-23, TEST2-R23, and UNKNOWNS-69 and converts them to QC calls using fixed operating thresholds
 - visualizes the decision boundary in PCA space by evaluating the full-space classifier on a PCA grid mapped back to the original feature space (PCA is used for plotting only; classification is performed in the 7D marker space)
 
