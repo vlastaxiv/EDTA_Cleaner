@@ -1,5 +1,15 @@
 # EDTA Blood RNA QC
 
+## codex oprava
+
+This preview uses the FNR presets and archived model evaluated in the corrected notebooks. The example opens with 23 calibration references and 69 unknown samples. Select FNR0, FNR5 or FNR10 to see the reference counts, the call for `EDTA T24 3` and the number of unknowns flagged for review. To test your own data, upload raw Cq values and select **Run Prediction**.
+
+To run this preview beside an existing local EDTA Cleaner instance, activate the EDTA Cleaner environment, open this branch and run:
+
+```shell
+python run_streamlit.py
+```
+
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.20616059.svg)](https://doi.org/10.5281/zenodo.20616059)
 
 A Streamlit app for automated quality control of EDTA-tube blood RNA profiles using a custom-trained Support Vector Machine (SVM) model.
@@ -60,13 +70,13 @@ The archived software versions are available on Zenodo:
 For installation and routine use, download the current repository from GitHub:
 
 ```text
-git clone https://github.com/vlastaxiv/EDTA_Cleaner.git
+git clone --branch bmc-methods/codex-oprava https://github.com/vlastaxiv/EDTA_Cleaner.git EDTA_Cleaner_codex_oprava
 ```
 
 Then go into the downloaded folder:
 
 ```text
-cd EDTA_Cleaner
+cd EDTA_Cleaner_codex_oprava
 ```
 Keep the EDTA_Cleaner folder in one stable location on your computer after setup. If you move or rename the folder later, open a new terminal and run cd into the new location before starting the app again.
 
@@ -183,7 +193,7 @@ Use these steps when you simply want to start the app.
    terminal into your browser. It usually looks like this:
 
    ```text
-   http://localhost:8501
+   http://127.0.0.1:8502
    ```
 
 ### Why not run Streamlit directly?
@@ -216,7 +226,7 @@ After the app is open, choose what you want to do.
 
   The built-in example dataset is optional. It is only a demo dataset for testing that the app works. You do not need to use it before uploading your own data.
 
-  To use the demo data, select **Built-in example dataset** in the sidebar.
+  The built-in example opens by default. Selecting a new preset refreshes its results immediately.
 
 - **Upload your own data**
 
@@ -230,7 +240,7 @@ After the app is open, choose what you want to do.
 
 - **Run prediction and export results**
 
-  Click **Run Prediction** to calculate the quality assessment. The app will show the SVM decision-boundary plot and the results table. You can then download the Excel report.
+  The demo updates when you select a preset. For an upload, click **Run Prediction** to calculate the QC flags. The app will show the SVM decision-boundary plot and the results table. You can then download the Excel report.
 
 
 ## 📁 Repository Structure

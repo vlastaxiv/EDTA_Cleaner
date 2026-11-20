@@ -29,7 +29,10 @@ def _load_default_certs_without_windows_store(
 ssl.SSLContext.load_default_certs = _load_default_certs_without_windows_store
 
 app_path = Path(__file__).resolve().parent / "src" / "app.py"
-sys.argv = ["streamlit", "run", str(app_path), *sys.argv[1:]]
+sys.argv = [
+    "streamlit", "run", str(app_path),
+    "--server.address=127.0.0.1", "--server.port=8502", *sys.argv[1:]
+]
 
 from streamlit.web.cli import main
 

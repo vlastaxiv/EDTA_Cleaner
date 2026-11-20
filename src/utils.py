@@ -230,15 +230,15 @@ def create_matplotlib_decision_plot(
     ax.contour(xx, yy, Z, levels=[threshold], colors="k", linewidths=1)
 
     ax.scatter(*X_train_pca.T, c=y_train,
-               cmap=mcolors.ListedColormap(["#eb9696", "#5ECEAC"]),
+               cmap=mcolors.ListedColormap(["#eb9696", "#5ECEAC"]), vmin=0, vmax=1,
                marker="x", label="Training")
     ax.scatter(*X_new_pca.T, c=y_unk,
-               cmap=mcolors.ListedColormap(["#eb9696", "#5ECEAC"]),
+               cmap=mcolors.ListedColormap(["#eb9696", "#5ECEAC"]), vmin=0, vmax=1,
                edgecolors="k", label="Predictions")
 
     ax.set_xlabel("PC 1")
     ax.set_ylabel("PC 2")
-    ax.set_title(f"SVM Decision Boundary for FNR {fnr}%")
+    ax.set_title(f"SVM decision boundary · preset FNR{fnr}")
     ax.legend(loc="upper left")
     ax.grid(True)
 
@@ -265,22 +265,17 @@ FNR_TO_THRESHOLD = {
 
 def highlight_pred(val):
     """Return CSS style string based on the prediction value."""
-    if val == 'Sample quality is OK.':
+    if val == 'PASS':
         return 'background-color: white; color: black'
     else:
         return 'background-color: #eb9696; color: black'
 
 
 def get_fnr_explanation() -> list[str]:
-    """
-    Returns the three key points explaining FNR behavior.
-    """
-    return [ 
-        "**False Negative Rate (FNR)** controls how strict the app is when deciding whether a sample is OK according to the pipeline.",
-
-        "**FNR = 0%** uses the most conservative validated operating threshold, called the safe threshold. Only samples above this threshold are classified as OK.",
-        
-        "**Increasing FNR** shifts the operating threshold, so more borderline samples may be classified as OK according to the pipeline."
+    return [
+        "FNR0 uses the highest affected reference score in DEV-165 and TEST2-R23.",
+        "FNR1 to FNR10 use percentiles of the nine affected TEST2-R23 samples. "
+        "The number identifies the preset. The observed missed-flag rate is shown alongside the counts.",
     ]
 
 

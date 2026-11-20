@@ -4,6 +4,7 @@ from pathlib import Path
 
 # Core helpers: pipeline, data loading & validation, charting
 from utils import (
+    validate_data,
     load_pipeline,
     get_training_data,
     get_example_data,
@@ -14,19 +15,15 @@ from utils import (
     create_pca_chart,
     create_matplotlib_decision_plot,
     FNR_TO_THRESHOLD,
-    highlight_pred,
     get_fnr_explanation,
-    UPLOAD_COLUMNS, 
-    SAFE_THRESHOLD
+    highlight_pred,
+    UPLOAD_COLUMNS,
 )
 
 
 # Data & plotting
 import pandas as pd
-import numpy as np
-import altair as alt
 import matplotlib.pyplot as plt
-import matplotlib.colors as mcolors
 import warnings
 
 # File I/O
@@ -41,6 +38,8 @@ TRAIN_DATA_PATH   = DATA_DIR / "train_165_data.csv"
 EXAMPLE_DATA_PATH = DATA_DIR / "example_new_samples.csv"  
 CALC_PIPELINE_PATH = MODELS_DIR / "final_pipeline_v1_2025-12-09.joblib"
 PLOT_PIPELINE_PATH = MODELS_DIR /"pca2.joblib"
+
+st.set_page_config(page_title="EDTA Cleaner · codex oprava")
 
 # Global CSS adjustments
 st.markdown(
@@ -61,19 +60,18 @@ st.markdown(
 
 # Application title
 st.title("EDTA Cleaner")
-st.markdown(
-    "This application evaluates whether gene expression profiles, derived from RNA isolated from EDTA-tube blood,"
-    " meet quality standards using a trained Support Vector Machine (SVM) model."
+st.caption("codex oprava")
+st.write(
+    "Screen EDTA blood RNA expression profiles for handling-related changes. "
+    "A FLAG calls for a review of the sample."
 )
 
-# Load pipeline and training dataset
-# Load pipeline and training dataset
-# Load pipelines and training dataset
+# Load the released model and the technical repeat used for threshold calibration.
 try:
     pipeline_calc = load_pipeline(str(CALC_PIPELINE_PATH))  # klasifikace (sklearn Pipeline)
     pca2 = load_pipeline(str(PLOT_PIPELINE_PATH))           # grafy (PCA objekt z pca2.joblib)
     df_train = get_training_data()
-    st.success("Model, PCA2 and training data loaded successfully.")
+    test2 = pd.read_csv(DATA_DIR / "test2_data.csv")
 except Exception as e:
     st.error(f"Initialization error: {e}")
     st.stop()
@@ -111,7 +109,7 @@ uploaded_file = st.sidebar.file_uploader(
 )
 use_example = st.sidebar.checkbox(
     "Use built-in example dataset (demo only)",
-    value=False,
+    value=True,
     key="use_example_dataset",
 )
 if use_example:
@@ -119,14 +117,15 @@ if use_example:
 
 # Sidebar: operating-threshold adjustment
 st.sidebar.markdown("---")
-st.sidebar.header("Optional Threshold Adjustment")
-with st.sidebar.expander("ℹ️ Why to adjust FNR?"):
+st.sidebar.header("Operating preset")
+with st.sidebar.expander("How are the presets defined?"):
     for line in get_fnr_explanation():
         st.caption(line)
 fnr = st.sidebar.selectbox(
-    "Select false negative rate (FNR) %",
+    "Select a preset",
     list(FNR_TO_THRESHOLD.keys()),
     index=0,
+    format_func=lambda preset: f"FNR{preset}",
     key="fnr_selectbox"
 )
 threshold = FNR_TO_THRESHOLD[fnr]
@@ -134,27 +133,37 @@ threshold = FNR_TO_THRESHOLD[fnr]
 # Sidebar: about link
 st.sidebar.markdown("---")
 st.sidebar.header("About This Application")
-with st.sidebar.expander("ℹ️ SVM parameters and performance"):
-    st.caption(
-        "- Kernel: Polynomial\n"
-        "- Polynomial degree: 2\n"
-        "- Regularization parameter (C): 0.1\n"
-        "- Coef0: 0.5\n"
-        "- Gamma: scale\n"
-        "- Training samples: 165\n"
-        "- Test samples: 23\n"
-        "- SV (% of training data): 18%\n"
-        "- Cross-validation AUC (5-fold): 1.0 ± 0"
+with st.sidebar.expander("Model and reference data"):
+    st.write(
+        "The archived polynomial SVM uses seven markers and was fitted on 165 profiles. "
+        "TEST2-R23 is a technical remeasurement of the 23 TEST1 specimens and contributed "
+        "to threshold calibration. DEV and TEST1 share one complete record."
     )
-  
-st.sidebar.markdown("[ℹ️ Full documentation](https://github.com/vlastaxiv/EDTA_Cleaner#readme)")
+st.sidebar.markdown("[Notebook documentation](https://github.com/vlastaxiv/EDTA_Cleaner/tree/v1.0.3-rc.1#readme)")
+
+# Report calibration agreement against measured reference classes at the selected threshold.
+reference_scores = pipeline_calc.decision_function(test2[expected_cols])
+reference_pass = reference_scores > threshold
+affected = test2["groups"].eq(0)
+intact = test2["groups"].eq(1)
+missed = int((affected & reference_pass).sum())
+false_flags = int((intact & ~reference_pass).sum())
+
+st.subheader(f"FNR{fnr} · reference results")
+st.write(
+    f"**{missed}/{affected.sum()} affected samples passed** ({missed / affected.sum():.1%} missed). "
+    f"**{false_flags}/{intact.sum()} intact samples were flagged.**"
+)
+st.caption(
+    f"Observed on TEST2-R23, the 23 technical repeats used in calibration. "
+    f"A sample passes when its decision score is greater than {threshold!r}."
+)
 
 # Load and prepare data
 if use_example:
     # Built-in example dataset
     df_new = get_example_data()
     # Validate against model features 
-    from utils import validate_data  # ensure function is imported
     validate_data(df_new, expected_cols)
 
 elif uploaded_file:
@@ -172,7 +181,7 @@ else:
     st.stop()
 
 # Data preview
-st.write("## Normalized Data Using Reference Genes ")
+
 
 # Drop any 'group' or 'groups' columns if present
 df_display = df_new.drop(columns=["group", "groups"], errors="ignore").copy()
@@ -181,7 +190,7 @@ df_display = df_new.drop(columns=["group", "groups"], errors="ignore").copy()
 float_cols = df_display.select_dtypes(include=["float"]).columns
 df_display[float_cols] = df_display[float_cols].round(1)
 df_display.index = range(1, len(df_display) + 1)
-st.dataframe(df_display, use_container_width=True)
+
 
 # PCA Projection: Training vs. New Samples
 warnings.filterwarnings(
@@ -191,16 +200,13 @@ warnings.filterwarnings(
     module="sklearn.utils.validation",
 )
 
-chart = create_pca_chart(pipeline_calc, pca2, df_train, df_new, expected_cols)
-st.altair_chart(chart, use_container_width=True)
+with st.expander("Normalized inputs and PCA projection"):
+    st.dataframe(df_display, use_container_width=True)
+    chart = create_pca_chart(pipeline_calc, pca2, df_train, df_new, expected_cols)
+    st.altair_chart(chart, use_container_width=True)
 
-# Display current operating threshold
-st.markdown(
-    f"**Current operating threshold:** {threshold:.2f} (FNR = {fnr}%). Samples with SVM decision score > operating threshold are classified as OK according to the pipeline."
-)
-
-# Prediction step
-if st.button("Run Prediction"):
+# Example results update directly when the preset changes.
+if use_example or st.button("Run Prediction"):
     # Identify the first column name
     first_col = df_new.columns[0]
 
@@ -211,29 +217,34 @@ if st.button("Run Prediction"):
     # Apply threshold: class 1 if score > threshold, otherwise class 0
     preds = (decision_scores > threshold).astype(int)
 
-    # generate prediction labels based on thresholded decision scores
-    pred_labels = [
-        "Sample quality is OK." if p == 1 else
-        "Do not use this sample. Its gene expression has been altered in EDTA tube."
-        for p in preds
-    ]
-
-    # Plot decision boundary
-    fig = create_matplotlib_decision_plot(
-    pipeline_calc, pca2, df_train, df_new, expected_cols, threshold, fnr
-    )
-
-    st.pyplot(fig)
-
-    # Display results table
-    st.write("## Quality Assessment")
-
+    pred_labels = ["PASS" if p == 1 else "FLAG" for p in preds]
+    total = len(preds)
+    flagged = int((preds == 0).sum())
+    st.subheader(f"FNR{fnr} · sample results")
+    if use_example:
+        is_unknown = ~df_new["sample"].isin(test2["sample"])
+        flagged_unknown = int((is_unknown & (preds == 0)).sum())
+        st.write(
+            f"**{flagged_unknown}/{is_unknown.sum()} unknown samples flagged for review.** "
+            "Their handling status is unknown."
+        )
+        boundary = df_new["sample"].eq("EDTA T24 3")
+        boundary_score = float(decision_scores[boundary].item())
+        boundary_call = "PASS" if boundary_score > threshold else "FLAG"
+        st.write(
+            f"**EDTA T24 3: {boundary_call}.** This affected reference sample scores "
+            f"{boundary_score!r}, exactly the FNR0 threshold in the released data. "
+            "Equality gives a FLAG."
+        )
+        st.caption(f"The example includes {total} samples: {is_unknown.sum()} unknowns and {len(test2)} references.")
+    else:
+        st.write(f"**{flagged}/{total} samples flagged for review.** {total - flagged} passed.")
 
     # Create results DataFrame
     sample_values = df_new["sample"].values if "sample" in df_new.columns else df_new[first_col].values
     df_result = pd.DataFrame({
         'sample': sample_values,
-        'decision_score': [f"{score:.2f}".rstrip('0').rstrip('.') for score in decision_scores],
+        'decision_score': decision_scores,
         'prediction': pred_labels
     })
 
@@ -241,10 +252,6 @@ if st.button("Run Prediction"):
     df_result.index = range(1, len(df_result) + 1)
 
     # Style the results table
-    def highlight_pred(val):
-        return 'background-color: white; color: black' if val == 'Sample quality is OK.' \
-               else 'background-color: #eb9696; color: black'
-
     styled = (
         df_result.style
                  .map(highlight_pred, subset=['prediction'])
@@ -266,18 +273,17 @@ if st.button("Run Prediction"):
         use_container_width=True,
         column_config={
             "sample": st.column_config.TextColumn("sample", width="small"),
-            "decision_score": st.column_config.TextColumn("decision_score", width="small"),
+            "decision_score": st.column_config.NumberColumn("Decision score", format="%.8f"),
             "prediction": st.column_config.TextColumn("prediction", width="large"),
         },
     )
 
-    # Summary of predictions
-    total = len(preds)
-    ok_count = sum(preds)
-    altered_count = total - ok_count
-    st.markdown(f"**Support vector model prediction results with selected FNR = {fnr}%:**")
-    st.markdown(f"{ok_count} samples OK ({ok_count/total*100:.1f}%), {altered_count} samples with altered gene expression ({altered_count/total*100:.1f}%)"
-    )
+    with st.expander("Decision boundary in PCA space"):
+        fig = create_matplotlib_decision_plot(
+            pipeline_calc, pca2, df_train, df_new, expected_cols, threshold, fnr
+        )
+        st.pyplot(fig)
+        plt.close(fig)
 
     # Export results to Excel
     excel_buffer = io.BytesIO()
@@ -320,7 +326,7 @@ if st.button("Run Prediction"):
             'border': 1,
             'align': 'center',
             'valign': 'vcenter',
-            'num_format': '0.00',
+            'num_format': '0.00000000',
         })
 
         for col_num, column_name in enumerate(df_result.columns):
@@ -335,8 +341,8 @@ if st.button("Run Prediction"):
 
         for row_num, (_, row) in enumerate(df_result.iterrows(), start=1):
             prediction = row['prediction']
-            row_format = ok_format if prediction == "Sample quality is OK." else altered_format
-            worksheet.write(row_num, 0, row['sample'], default_format)
+            row_format = ok_format if prediction == "PASS" else altered_format
+            worksheet.write_string(row_num, 0, str(row['sample']), default_format)
             worksheet.write_number(row_num, 1, float(row['decision_score']), score_format)
             worksheet.write(row_num, 2, prediction, row_format)
 
@@ -344,7 +350,7 @@ if st.button("Run Prediction"):
     st.download_button(
         "Download Results (.xlsx)",
         data=excel_buffer,
-        file_name = f"Predictions_FNR_{fnr}.xlsx",
+        file_name = f"EDTA_Cleaner_codex_oprava_FNR{fnr}.xlsx",
         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     )
 
